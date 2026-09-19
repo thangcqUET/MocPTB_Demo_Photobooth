@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "Mộc Photobooth — Kiosk Prototype 1920×1080",
+  "entry": "moc-photobooth-kiosk.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "primary": true,
+  "createdAt": "2026-09-19T17:38:25.575Z",
+  "updatedAt": "2026-09-19T17:38:25.713Z",
+  "metadata": {
+    "identifier": "moc-photobooth-kiosk",
+    "artifactType": "text/html",
+    "inferred": false
+  }
+}

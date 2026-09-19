@@ -1,0 +1,1322 @@
+
+<!doctype html>
+<html lang="vi" data-lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mộc Photobooth — Kiosk Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   MỘC PHOTOBOOTH — kiosk design tokens
+   Visual language: Poze Overhead (burgundy + gold + cream).
+   Flow / elements: Mộc Photobooth app.
+   ═══════════════════════════════════════════════════════════════════ */
+:root{
+  /* core six */
+  --bg:          oklch(38% 0.13 32);
+  --surface:     oklch(95% 0.02 85);
+  --fg:          oklch(100% 0 0);
+  --muted:       oklch(100% 0 0 / 0.72);
+  --border:      oklch(100% 0 0 / 0.18);
+  --accent:      oklch(70% 0.09 85);
+
+  /* extended */
+  --bg-deep:     oklch(30% 0.11 32);
+  --ink:         oklch(21% 0.03 40);
+  --ink-soft:    oklch(21% 0.03 40 / 0.58);
+  --accent-soft: oklch(83% 0.06 75);
+  --ok:          oklch(64% 0.15 145);
+  --warn:        oklch(58% 0.19 30);
+  --info:        oklch(58% 0.07 255);
+  --shadow:      0 20px 46px oklch(18% 0.05 30 / 0.42);
+
+  /* simulated-camera scene + empty slot */
+  --scene-bg:    oklch(94% 0.012 85);
+  --scene-line:  oklch(24% 0.02 40);
+  --slot-empty:  oklch(91% 0.012 85);
+
+  /* frame tones */
+  --t-cream-bg:  oklch(95% 0.025 85);  --t-cream-ink: oklch(32% 0.05 60);
+  --t-blush-bg:  oklch(93% 0.035 15);  --t-blush-ink: oklch(46% 0.10 12);
+  --t-teal-bg:   oklch(91% 0.045 205); --t-teal-ink:  oklch(42% 0.07 220);
+  --t-sand-bg:   oklch(94% 0.030 82);  --t-sand-ink:  oklch(45% 0.06 195);
+  --t-lilac-bg:  oklch(92% 0.040 300); --t-lilac-ink: oklch(46% 0.10 300);
+  --t-ember-bg:  oklch(94% 0.035 62);  --t-ember-ink: oklch(48% 0.14 40);
+  --t-mint-bg:   oklch(93% 0.040 162); --t-mint-ink:  oklch(42% 0.08 162);
+  --t-night-bg:  oklch(28% 0.030 265); --t-night-fg:  oklch(94% 0.015 265);
+
+  /* type */
+  --font-serif:   'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-display: 'Oswald', 'Arial Narrow', Impact, sans-serif;
+  --font-round:   'Baloo 2', 'Segoe UI', system-ui, sans-serif;
+  --font-ui:      'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; margin:0; background:var(--bg-deep); overflow:hidden; }
+body{ font-family:var(--font-ui); color:var(--fg); -webkit-font-smoothing:antialiased; }
+button{ font:inherit; color:inherit; cursor:pointer; border:none; background:none; }
+img,svg{ display:block; max-width:100%; }
+h1,h2,h3,h4{ margin:0; text-wrap:balance; }
+p{ margin:0; text-wrap:pretty; }
+
+/* ─── kiosk stage ───────────────────────────────────────────────── */
+.stage{
+  position:absolute; top:50%; left:50%;
+  width:1920px; height:1080px;
+  transform-origin:center center;
+  background:var(--bg);
+  overflow:hidden;
+}
+.stage::before{
+  content:''; position:absolute; inset:0; z-index:60; pointer-events:none;
+  background-image:var(--grain); opacity:.07; mix-blend-mode:overlay;
+}
+.stage::after{
+  content:''; position:absolute; inset:0; z-index:59; pointer-events:none;
+  background:radial-gradient(128% 96% at 50% 42%, transparent 52%, color-mix(in oklch, var(--bg-deep) 88%, transparent) 142%);
+}
+
+/* ─── screen shell ──────────────────────────────────────────────── */
+.screen{
+  position:absolute; inset:0; z-index:2;
+  display:flex; flex-direction:column;
+  padding:48px 68px 40px;
+  opacity:0; visibility:hidden;
+  transition:opacity .32s ease, transform .32s ease;
+  transform:scale(.995);
+}
+.screen.active{ opacity:1; visibility:visible; transform:scale(1); }
+.screen.center{ align-items:center; justify-content:center; text-align:center; }
+
+/* ─── bilingual type ────────────────────────────────────────────── */
+.bi{ font-family:var(--font-display); text-transform:uppercase; line-height:.96; letter-spacing:.004em; }
+.bi-en,.bi-vi{ display:block; }
+html[data-lang="vi"] .bi-vi{ font-family:var(--font-display); font-size:1em; opacity:1; text-transform:uppercase; }
+html[data-lang="vi"] .bi-en{ font-family:var(--font-round); font-size:.40em; opacity:.74; text-transform:none; letter-spacing:0; line-height:1.15; margin-top:.18em; }
+html[data-lang="en"] .bi-en{ font-family:var(--font-display); font-size:1em; opacity:1; text-transform:uppercase; }
+html[data-lang="en"] .bi-vi{ font-family:var(--font-round); font-size:.40em; opacity:.74; text-transform:none; letter-spacing:0; line-height:1.15; margin-top:.18em; }
+
+.t-hero{ font-size:120px; }
+.t-xl  { font-size:74px; }
+.t-lg  { font-size:52px; }
+.t-md  { font-size:38px; }
+.t-sm  { font-size:28px; }
+
+html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
+
+.serif{ font-family:var(--font-serif); }
+.round{ font-family:var(--font-round); }
+.mono { font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+.sub{ color:var(--muted); font-family:var(--font-round); font-weight:600; }
+.gold{ color:var(--accent); }
+
+/* ─── sparkle ornament ──────────────────────────────────────────── */
+.spark{ color:var(--accent); width:46px; height:46px; }
+.spark.sm{ width:28px; height:28px; }
+.spark.lg{ width:74px; height:74px; }
+
+/* ─── pills / buttons ───────────────────────────────────────────── */
+.pill{
+  display:inline-flex; align-items:center; justify-content:center; gap:14px;
+  border-radius:999px; padding:17px 34px;
+  font-family:var(--font-round); font-weight:700; font-size:26px; line-height:1;
+  border:2px solid var(--ink);
+  transition:transform .1s ease, filter .15s ease, box-shadow .15s ease;
+  white-space:nowrap;
+}
+.pill:hover{ filter:brightness(1.04); }
+.pill:active{ transform:translateY(2px) scale(.99); }
+.pill-light { background:var(--surface); color:var(--ink); }
+.pill-gold  { background:var(--accent-soft); color:var(--ink); }
+.pill-green { background:var(--ok); color:var(--fg); border-color:color-mix(in oklch, var(--ok) 68%, var(--ink)); }
+.pill-red   { background:var(--warn); color:var(--fg); border-color:color-mix(in oklch, var(--warn) 68%, var(--ink)); }
+.pill-blue  { background:var(--info); color:var(--fg); border-color:color-mix(in oklch, var(--info) 68%, var(--ink)); }
+.pill-ghost { background:transparent; color:var(--fg); border-color:var(--border); }
+.pill svg{ width:30px; height:30px; }
+.pill[disabled]{ opacity:.35; pointer-events:none; }
+
+.navc{
+  width:98px; height:98px; border-radius:50%;
+  background:var(--accent-soft); color:var(--ink);
+  display:grid; place-items:center;
+  transition:transform .1s ease, filter .15s ease;
+}
+.navc:hover{ filter:brightness(1.05); }
+.navc:active{ transform:scale(.95); }
+.navc svg{ width:46px; height:46px; }
+.navc.dark{ background:var(--ink); color:var(--fg); }
+
+.iconbtn{
+  width:74px; height:74px; border-radius:50%;
+  display:grid; place-items:center;
+  background:var(--accent-soft); color:var(--ink);
+  transition:transform .1s ease;
+}
+.iconbtn:active{ transform:scale(.94); }
+.iconbtn svg{ width:34px; height:34px; }
+
+/* ─── cream cards / inputs ──────────────────────────────────────── */
+.card{ background:var(--surface); color:var(--ink); border-radius:26px; padding:30px; box-shadow:var(--shadow); }
+.input{
+  width:100%; height:86px; padding:0 26px;
+  background:var(--surface); color:var(--ink);
+  border:2px solid var(--ink); border-radius:18px;
+  font-family:var(--font-mono); font-size:36px; letter-spacing:.14em;
+}
+.input::placeholder{ color:var(--ink-soft); letter-spacing:.04em; font-size:26px; }
+.input:focus{ outline:none; box-shadow:0 0 0 5px color-mix(in oklch, var(--accent-soft) 70%, transparent); }
+@keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-11px)} 40%{transform:translateX(9px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(4px)} }
+.shake{ animation:shake .38s ease; }
+
+/* ─── keypad ────────────────────────────────────────────────────── */
+.keypad{ display:grid; grid-template-columns:repeat(3,104px); gap:18px; justify-content:center; }
+.key{
+  width:104px; height:104px; border-radius:50%;
+  background:var(--surface); color:var(--ink);
+  font-family:var(--font-ui); font-weight:800; font-size:42px;
+  display:grid; place-items:center;
+  box-shadow:0 8px 18px oklch(18% 0.05 30 / 0.30);
+  transition:transform .08s ease, filter .12s ease;
+}
+.key:hover{ filter:brightness(1.05); }
+.key:active{ transform:scale(.93); }
+.key.small{ font-family:var(--font-round); font-size:24px; font-weight:700; }
+.key.del{ background:var(--warn); color:var(--fg); }
+.key.ok { background:var(--ok); color:var(--fg); }
+.keypad.lg .key{ width:118px; height:118px; font-size:48px; }
+.keypad.lg{ grid-template-columns:repeat(3,118px); gap:22px; }
+
+/* ─── top chrome ────────────────────────────────────────────────── */
+.toprow{ display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.langtog{
+  position:absolute; bottom:34px; left:68px; z-index:20;
+  display:flex; gap:4px; padding:5px;
+  background:color-mix(in oklch, var(--bg-deep) 55%, transparent);
+  border:1px solid var(--border); border-radius:999px;
+}
+.langtog button{
+  padding:8px 20px; border-radius:999px;
+  font-family:var(--font-round); font-weight:700; font-size:20px; color:var(--muted);
+}
+.langtog button.on{ background:var(--accent-soft); color:var(--ink); }
+
+/* ─── frame previews ────────────────────────────────────────────── */
+.framebox{
+  width:100%; background:var(--f-bg); color:var(--f-ink);
+  border-radius:12px; padding:14px;
+  display:flex; flex-direction:column; gap:10px;
+  box-shadow:var(--shadow);
+}
+.tone-cream { --f-bg:var(--t-cream-bg); --f-ink:var(--t-cream-ink); }
+.tone-blush { --f-bg:var(--t-blush-bg); --f-ink:var(--t-blush-ink); }
+.tone-teal  { --f-bg:var(--t-teal-bg);  --f-ink:var(--t-teal-ink);  }
+.tone-sand  { --f-bg:var(--t-sand-bg);  --f-ink:var(--t-sand-ink);  }
+.tone-lilac { --f-bg:var(--t-lilac-bg); --f-ink:var(--t-lilac-ink); }
+.tone-ember { --f-bg:var(--t-ember-bg); --f-ink:var(--t-ember-ink); }
+.tone-mint  { --f-bg:var(--t-mint-bg);  --f-ink:var(--t-mint-ink);  }
+.tone-night { --f-bg:var(--t-night-bg); --f-ink:var(--t-night-fg);  }
+.fgrid{ display:grid; grid-template-columns:repeat(var(--cols,2),1fr); gap:9px; }
+.slot{
+  position:relative; overflow:hidden; border-radius:5px;
+  aspect-ratio:4/3; background:var(--slot-empty);
+}
+.fband{
+  font-family:var(--font-serif); text-align:center;
+  font-size:15px; line-height:1.2; letter-spacing:.02em;
+}
+.fband.sm{ font-size:12px; opacity:.85; }
+
+.scene{
+  position:absolute; inset:0;
+  background-color:var(--scene-bg);
+  background-image:
+    repeating-linear-gradient(45deg, var(--scene-line) 0 4px, transparent 4px 26px),
+    repeating-linear-gradient(-45deg, var(--scene-line) 0 4px, transparent 4px 26px);
+}
+.scene.lg{
+  background-image:
+    repeating-linear-gradient(45deg, var(--scene-line) 0 9px, transparent 9px 62px),
+    repeating-linear-gradient(-45deg, var(--scene-line) 0 9px, transparent 9px 62px);
+}
+.scene::after{
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(78% 66% at 50% 34%, transparent 26%, color-mix(in oklch, var(--scene-line) 40%, transparent) 128%);
+}
+
+/* ─── frame picker ──────────────────────────────────────────────── */
+.chips{ display:flex; flex-wrap:wrap; gap:12px; }
+.chip{
+  padding:11px 24px; border-radius:999px;
+  background:color-mix(in oklch, var(--bg-deep) 42%, transparent);
+  border:1px solid var(--border);
+  font-family:var(--font-round); font-weight:700; font-size:21px; color:var(--fg);
+  transition:background .15s ease, color .15s ease;
+}
+.chip.on{ background:var(--accent-soft); color:var(--ink); border-color:var(--accent-soft); }
+.framegrid{ display:grid; grid-template-columns:repeat(5,1fr); gap:26px; align-content:start; }
+.framecard{
+  background:color-mix(in oklch, var(--bg-deep) 34%, transparent);
+  border:2px solid var(--border); border-radius:20px; padding:16px;
+  transition:border-color .15s ease, transform .12s ease, background .15s ease;
+}
+.framecard:hover{ transform:translateY(-3px); }
+.framecard.on{ border-color:var(--accent-soft); background:color-mix(in oklch, var(--accent) 16%, transparent); }
+.framecard .fname{ font-family:var(--font-round); font-weight:700; font-size:18px; text-align:center; margin-top:12px; color:var(--fg); }
+.framecard .fmeta{ text-align:center; font-size:14px; color:var(--muted); font-family:var(--font-mono); }
+
+/* ─── capture ───────────────────────────────────────────────────── */
+.capstage{ position:absolute; inset:0; z-index:0; }
+.capstage .scene{ position:absolute; inset:0; }
+.capstage::after{
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(70% 60% at 50% 42%, transparent 40%, color-mix(in oklch, var(--bg-deep) 78%, transparent) 130%);
+}
+.capui{ position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:26px; }
+.ringwrap{ position:relative; width:420px; height:420px; display:grid; place-items:center; }
+.ring{ position:absolute; inset:0; transform:rotate(-90deg); }
+.ring circle{ fill:none; stroke-width:16; stroke-linecap:round; }
+.ring .track{ stroke:color-mix(in oklch, var(--fg) 22%, transparent); }
+.ring .fill { stroke:var(--accent-soft); stroke-dasharray:942.5; stroke-dashoffset:0; }
+.countnum{
+  font-family:var(--font-display); font-weight:600; font-size:230px; line-height:1;
+  color:var(--fg); text-shadow:0 12px 40px oklch(18% 0.05 30 / .5);
+}
+.recbadge{
+  position:absolute; top:44px; right:68px; z-index:4;
+  display:flex; align-items:center; gap:12px;
+  padding:12px 24px; border-radius:999px;
+  background:color-mix(in oklch, var(--bg-deep) 68%, transparent);
+  border:1px solid var(--border);
+  font-family:var(--font-round); font-weight:700; font-size:22px;
+}
+.recdot{ width:15px; height:15px; border-radius:50%; background:var(--warn); animation:pulse 1s infinite; }
+@keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.28} }
+.flash{ position:absolute; inset:0; background:var(--fg); opacity:0; z-index:5; pointer-events:none; transition:opacity .13s ease; }
+.flash.on{ opacity:.9; }
+
+/* ─── review / edit / final layout ──────────────────────────────── */
+.split{ display:grid; grid-template-columns:1fr 440px; gap:36px; flex:1; min-height:0; overflow:hidden; }
+.panel{
+  background:color-mix(in oklch, var(--bg-deep) 34%, transparent);
+  border:1px solid var(--border); border-radius:22px; padding:20px;
+  display:flex; flex-direction:column; gap:16px; min-height:0; overflow:hidden;
+}
+.panel h4{ font-family:var(--font-round); font-weight:700; font-size:22px; color:var(--muted); }
+.thumbrow{ display:flex; gap:14px; }
+.thumb{
+  width:100px; border-radius:12px; overflow:hidden; position:relative;
+  border:3px solid transparent; aspect-ratio:4/3; background:var(--slot-empty);
+}
+.thumb.on{ border-color:var(--accent-soft); }
+.thumb .tagline{ position:absolute; left:0; bottom:0; background:var(--info); color:var(--fg); font-size:11px; padding:2px 7px; font-family:var(--font-round); font-weight:700; }
+.filters{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.filt{ border-radius:12px; overflow:hidden; border:3px solid transparent; }
+.filt.on{ border-color:var(--accent-soft); }
+.filt .swatch{ aspect-ratio:1; position:relative; background:var(--slot-empty); }
+.filt .swatch .scene{ position:absolute; inset:0; }
+.filt span{ display:block; text-align:center; font-size:14px; padding:7px 2px; font-family:var(--font-round); font-weight:700; color:var(--fg); }
+.stickergrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.stickerbtn{
+  aspect-ratio:1; border-radius:14px; background:var(--surface);
+  display:grid; place-items:center; box-shadow:0 6px 14px oklch(18% 0.05 30 / .28);
+}
+.stickerbtn svg{ width:44px; height:44px; }
+.stickerlayer{ position:absolute; inset:0; pointer-events:none; }
+.sticker{ position:absolute; width:64px; height:64px; }
+.previewwrap{ position:relative; display:flex; justify-content:center; align-items:center; min-height:0; height:100%; }
+
+/* ─── QR block ──────────────────────────────────────────────────── */
+.qrbox{ background:var(--fg); padding:22px; border-radius:20px; width:340px; }
+.qrbox .qrsvg svg{ width:100%; height:auto; }
+.scantab{
+  display:inline-block; background:var(--ink); color:var(--fg);
+  font-family:var(--font-mono); font-size:19px; letter-spacing:.22em;
+  padding:8px 22px; border-radius:10px 10px 0 0;
+}
+.pricerow{ display:flex; align-items:center; gap:26px; padding:24px 0; border-top:1px solid var(--border); }
+.priceopts{ display:flex; gap:20px; }
+.priceopt{
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+  padding:12px 6px; border-radius:18px; transition:background .15s ease;
+}
+.priceopt.on{ background:color-mix(in oklch, var(--accent) 18%, transparent); }
+.pricecircle{
+  width:96px; height:96px; border-radius:50%;
+  background:var(--accent); color:var(--ink);
+  display:grid; place-items:center;
+  font-family:var(--font-display); font-weight:600; font-size:48px;
+}
+.pricesquare{
+  width:96px; height:96px; border-radius:20px;
+  background:var(--surface); color:var(--ink);
+  display:grid; place-items:center;
+  font-family:var(--font-display); font-weight:600; font-size:48px;
+  border:3px solid var(--ink);
+}
+.priceopt .p{ font-family:var(--font-mono); font-size:23px; color:var(--muted); }
+.priceopt.on .p{ color:var(--fg); }
+
+.toast{
+  position:absolute; left:50%; bottom:64px; transform:translateX(-50%) translateY(20px);
+  background:var(--surface); color:var(--ink);
+  padding:20px 40px; border-radius:999px; font-family:var(--font-round); font-weight:700; font-size:24px;
+  box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease; z-index:70;
+}
+.toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+.spread{ display:flex; align-items:center; justify-content:space-between; gap:26px; }
+.grow{ flex:1; min-height:0; }
+.mt{ margin-top:auto; }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- ═══════════════ 1 · START ═══════════════ -->
+  <section class="screen center active" id="s-start" data-od-id="screen-start">
+    <button class="iconbtn" style="position:absolute;top:44px;right:68px;z-index:5" data-go="unlock" aria-label="Staff">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    </button>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="display:flex;align-items:center;gap:22px">
+        <svg class="spark lg" viewBox="0 0 100 100" fill="currentColor"><path d="M50 0c4 26 20 42 50 50-30 8-46 24-50 50-4-26-20-42-50-50 30-8 46-24 50-50z"/></svg>
+        <div class="serif gold" style="font-size:196px;font-weight:800;letter-spacing:.06em;line-height:1">MỘC</div>
+        <svg class="spark lg" viewBox="0 0 100 100" fill="currentColor"><path d="M50 0c4 26 20 42 50 50-30 8-46 24-50 50-4-26-20-42-50-50 30-8 46-24 50-50z"/></svg>
+      </div>
+      <div class="mono" style="font-size:26px;letter-spacing:.62em;color:var(--accent);padding-left:.62em">PHOTOBOOTH</div>
+    </div>
+
+    <button class="bi t-hero" data-go="pricing" style="margin-top:74px;background:none">
+      <span class="bi-vi">Chạm để bắt đầu</span>
+      <span class="bi-en">Touch to start</span>
+    </button>
+
+    <div class="round sub" style="font-size:24px;margin-top:26px">Mộc Photobooth</div>
+    <div class="round" style="position:absolute;bottom:52px;font-size:24px;color:var(--muted)">#“Turning moments into memories.”</div>
+  </section>
+
+  <!-- ═══════════════ 2 · UNLOCK ═══════════════ -->
+  <section class="screen" id="s-unlock" data-od-id="screen-unlock">
+    <div class="toprow">
+      <div style="display:flex;align-items:center;gap:20px">
+        <div class="iconbtn" style="background:var(--surface)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v9"/><path d="M6.5 6.5a8 8 0 1 0 11 0"/></svg>
+        </div>
+        <div class="bi t-md" style="text-align:left"><span class="bi-vi">Tắt máy</span><span class="bi-en">Shut down</span></div>
+      </div>
+      <button class="navc dark" data-go="pricing" aria-label="Skip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="grow" style="display:grid;grid-template-columns:1fr 520px;align-items:center;gap:60px">
+      <div style="display:flex;flex-direction:column;gap:30px;padding-left:60px">
+        <div class="bi t-xl"><span class="bi-vi">Nhập mật khẩu</span><span class="bi-en">Enter password</span></div>
+        <input class="input" id="unlock-input" inputmode="numeric" readonly placeholder="••••" style="max-width:640px">
+        <p class="sub" style="font-size:22px"><span class="t-vi">Dành cho nhân viên vận hành kiosk.</span><span class="t-en">For kiosk operators only.</span></p>
+      </div>
+      <div class="keypad lg" data-pad="unlock"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 3 · PRICING ═══════════════ -->
+  <section class="screen" id="s-pricing" data-od-id="screen-pricing">
+    <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:20px">
+        <svg class="spark" viewBox="0 0 100 100" fill="currentColor"><path d="M50 0c4 26 20 42 50 50-30 8-46 24-50 50-4-26-20-42-50-50 30-8 46-24 50-50z"/></svg>
+        <div class="bi t-xl"><span class="bi-vi">Bảng giá chụp</span><span class="bi-en">Photo pricing</span></div>
+        <svg class="spark" viewBox="0 0 100 100" fill="currentColor"><path d="M50 0c4 26 20 42 50 50-30 8-46 24-50 50-4-26-20-42-50-50 30-8 46-24 50-50z"/></svg>
+      </div>
+      <div class="round" style="font-size:26px;color:var(--fg)"><span class="t-vi">Bấm dấu X để chụp lại nếu muốn</span><span class="t-en">Tap X to retake if you want</span></div>
+    </div>
+
+    <div class="grow" style="display:flex;flex-direction:column;justify-content:center;gap:8px;max-width:1400px;margin:0 auto;width:100%">
+      <div class="pricerow" id="row-small"></div>
+      <div class="pricerow" id="row-big"></div>
+    </div>
+
+    <div class="spread">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <button class="navc" data-go="unlock" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 5l-7 7 7 7"/></svg></button>
+        <span class="round" style="font-size:22px"><span class="t-vi">Quay lại</span><span class="t-en">Back</span></span>
+      </div>
+      <div class="round" id="pricing-total" style="font-size:30px;color:var(--accent)"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <button class="navc" id="pricing-next" aria-label="Next" disabled style="opacity:.4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 5l7 7-7 7"/></svg></button>
+        <span class="round" style="font-size:22px"><span class="t-vi">Tiếp tục</span><span class="t-en">Continue</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 4 · PAYMENT METHOD ═══════════════ -->
+  <section class="screen" id="s-payment" data-od-id="screen-payment">
+    <div class="bi t-lg" style="text-align:left"><span class="bi-vi">Phương thức thanh toán</span><span class="bi-en">Payment method</span></div>
+
+    <div class="grow" style="display:grid;grid-template-columns:1fr 420px;gap:56px;align-items:center;margin-top:20px">
+      <div style="display:flex;flex-direction:column;gap:34px">
+        <div>
+          <div class="bi t-md" style="text-align:left;color:var(--accent)"><span class="bi-vi">Mã giảm giá</span><span class="bi-en">Voucher code</span></div>
+          <p class="sub" style="font-size:22px;margin-top:10px"><span class="t-vi">Nhập mã voucher / quà tặng (nếu có) rồi nhấn OK.</span><span class="t-en">Enter a voucher or gift code (if any), then press OK.</span></p>
+          <input class="input" id="voucher-input" readonly placeholder="VOUCHER" style="max-width:620px;margin-top:18px">
+        </div>
+        <div>
+          <div class="bi t-md" style="text-align:left;color:var(--accent)"><span class="bi-vi">Tổng thanh toán</span><span class="bi-en">Total payment</span></div>
+          <p class="sub" style="font-size:22px;margin-top:10px"><span class="t-vi">Số tiền bạn cần thanh toán là:</span><span class="t-en">The amount you need to pay is:</span></p>
+          <div class="mono gold" id="payment-total" style="font-size:76px;font-weight:700;margin-top:6px">—</div>
+        </div>
+      </div>
+      <div class="keypad" data-pad="voucher" style="align-self:start;margin-top:20px"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:34px;max-width:1180px;margin:0 auto;width:100%">
+      <button class="pill pill-light" data-go="pay-cash" style="font-size:34px;padding:26px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg>
+        <span class="t-vi">Nạp tiền mặt</span><span class="t-en">Pay cash</span>
+      </button>
+      <button class="pill pill-gold" data-go="pay-qr" style="font-size:34px;padding:26px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20v.01M20 20v.01"/></svg>
+        <span class="t-vi">Quét mã QR</span><span class="t-en">Pay with QR</span>
+      </button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:26px">
+      <button class="navc" data-go="pricing" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 5l-7 7 7 7"/></svg></button>
+      <span class="round" style="font-size:22px"><span class="t-vi">Quay lại</span><span class="t-en">Back</span></span>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 5 · PAY QR ═══════════════ -->
+  <section class="screen" id="s-pay-qr" data-od-id="screen-pay-qr">
+    <button class="navc dark" data-go="payment" style="position:absolute;top:44px;right:68px" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+
+    <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:10px">
+      <div class="bi t-xl" style="color:var(--fg)"><span class="bi-vi">Quét mã QR bên dưới</span><span class="bi-en">Please scan the QR code below</span></div>
+      <div class="round" style="font-size:26px;color:var(--muted)"><span class="t-vi">bằng ứng dụng ngân hàng hoặc ví điện tử của bạn</span><span class="t-en">with your mobile banking or e-wallet app</span></div>
+    </div>
+
+    <div class="grow" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+      <div class="scantab">SCAN ME</div>
+      <div class="qrbox"><div class="qrsvg" id="qr-svg"></div></div>
+      <div class="mono" id="qr-amount" style="font-size:44px;color:var(--accent);font-weight:700"></div>
+      <div class="mono" id="qr-code" style="font-size:22px;color:var(--muted);letter-spacing:.1em"></div>
+      <div class="round" style="font-size:24px;color:var(--fg);margin-top:6px">
+        <span class="t-vi">Hoàn tất chuyển khoản — hệ thống sẽ tự mở phiên chụp</span>
+        <span class="t-en">Once transferred, the session opens automatically</span>
+      </div>
+      <button class="pill pill-green" data-go="frame" style="margin-top:14px;font-size:28px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l5 5L20 6"/></svg>
+        <span class="t-vi">Tôi đã thanh toán</span><span class="t-en">I have paid</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 6 · PAY CASH ═══════════════ -->
+  <section class="screen" id="s-pay-cash" data-od-id="screen-pay-cash">
+    <button class="navc dark" data-go="payment" style="position:absolute;top:44px;right:68px" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+
+    <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div class="bi t-xl" style="color:var(--accent)"><span class="bi-vi">Tổng thanh toán</span><span class="bi-en">Total payment</span></div>
+      <div class="mono" id="cash-total" style="font-size:60px;color:var(--fg);font-weight:700">—</div>
+      <div class="round" style="font-size:26px;color:var(--fg)">
+        <span class="t-vi">Hệ thống không trả lại tiền thừa — vui lòng chuẩn bị đúng số tiền.</span>
+        <span class="t-en">No change is returned — please prepare the exact amount.</span>
+      </div>
+    </div>
+
+    <div class="grow" style="display:grid;grid-template-columns:1fr 470px;gap:50px;align-items:center;margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:50px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+          <div class="round" style="font-size:26px;font-weight:700"><span class="t-vi">Đưa tiền cho nhân viên</span><span class="t-en">Hand cash to staff</span></div>
+          <div class="card" style="width:330px;display:grid;place-items:center;padding:34px">
+            <svg viewBox="0 0 120 74" width="220" fill="none" stroke="var(--ink)" stroke-width="2.4">
+              <rect x="6" y="10" width="108" height="54" rx="6" transform="rotate(-6 60 37)"/>
+              <rect x="16" y="20" width="88" height="34" rx="4" transform="rotate(-6 60 37)" stroke-dasharray="4 4"/>
+              <circle cx="60" cy="37" r="11" transform="rotate(-6 60 37)"/>
+            </svg>
+            <div class="round" style="font-size:22px;color:var(--ink-soft);margin-top:14px"><span class="t-vi">Máy nhận tiền mặt</span><span class="t-en">Bill acceptor</span></div>
+          </div>
+        </div>
+        <div class="mono" style="font-size:52px;color:var(--accent)">→</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+          <div class="round" style="font-size:26px;font-weight:700"><span class="t-vi">Nhân viên nhập mã</span><span class="t-en">Staff enters code</span></div>
+          <input class="input" id="cash-input" readonly placeholder="••••" style="width:330px;text-align:center">
+          <div class="round" style="font-size:19px;color:var(--muted);text-align:center;max-width:330px">
+            <span class="t-vi">Mã mở phiên chụp dành cho nhân viên trực quầy.</span>
+            <span class="t-en">Session code for the staff on duty.</span>
+          </div>
+        </div>
+      </div>
+      <div class="keypad" data-pad="cash" style="align-self:center"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 7 · CHOOSE FRAME ═══════════════ -->
+  <section class="screen" id="s-frame" data-od-id="screen-frame">
+    <div class="toprow">
+      <div class="bi t-lg" style="text-align:left"><span class="bi-vi" id="frame-title-vi">Chọn khung ảnh</span><span class="bi-en" id="frame-title-en">Choose a frame</span></div>
+      <button class="navc dark" id="frame-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="chips" id="frame-cats" style="margin:22px 0 20px"></div>
+
+    <div class="grow" style="overflow:hidden;position:relative">
+      <div class="framegrid" id="frame-grid"></div>
+    </div>
+
+    <div class="spread" style="margin-top:18px">
+      <button class="pill pill-light" id="frame-cancel" style="font-size:26px"><span class="t-vi">Hủy</span><span class="t-en">Cancel</span></button>
+      <div class="round" id="frame-selected" style="font-size:24px;color:var(--muted)"></div>
+      <button class="pill pill-blue" id="frame-start" style="font-size:28px" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="t-vi">Bắt đầu chụp</span><span class="t-en">Start shooting</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 8 · CAPTURE ═══════════════ -->
+  <section class="screen" id="s-capture" data-od-id="screen-capture" style="padding:0">
+    <div class="capstage"><div class="scene lg"></div></div>
+    <div class="recbadge"><span class="recdot"></span><span class="t-vi">Đang ghi hình</span><span class="t-en">Recording</span></div>
+    <div class="capui">
+      <div class="round" style="font-size:30px;color:var(--fg);font-weight:700">
+        <span class="t-vi">Ảnh <span id="cap-idx">1</span> trong <span id="cap-total">4</span></span>
+        <span class="t-en">Shot <span id="cap-idx-en">1</span> of <span id="cap-total-en">4</span></span>
+      </div>
+      <div class="ringwrap">
+        <svg class="ring" viewBox="0 0 360 360"><circle class="track" cx="180" cy="180" r="150"/><circle class="fill" id="cap-ring" cx="180" cy="180" r="150"/></svg>
+        <div class="countnum" id="cap-num">3</div>
+      </div>
+      <div class="round" style="font-size:30px;color:var(--fg)"><span class="t-vi">Nhìn vào máy và cười thật tươi!</span><span class="t-en">Look at the camera and smile!</span></div>
+    </div>
+    <div class="flash" id="cap-flash"></div>
+  </section>
+
+  <!-- ═══════════════ 9 · REVIEW ═══════════════ -->
+  <section class="screen" id="s-review" data-od-id="screen-review" style="padding:38px 68px 32px">
+    <div class="toprow">
+      <button class="pill pill-red" data-go="start" style="font-size:24px;padding:14px 28px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        <span class="t-vi">Hủy bỏ</span><span class="t-en">Cancel</span>
+      </button>
+      <div class="round" style="font-size:28px;font-weight:700"><span class="t-vi">Ảnh <span id="rev-idx">1</span> trong <span id="rev-total">4</span></span><span class="t-en">Shot <span id="rev-idx-en">1</span> of <span id="rev-total-en">4</span></span></div>
+      <div style="width:220px"></div>
+    </div>
+
+    <div class="split" style="margin-top:18px">
+      <div class="previewwrap">
+        <div id="rev-big" style="height:452px;max-width:100%;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);position:relative;aspect-ratio:4/3;background:var(--slot-empty)"></div>
+      </div>
+      <div class="panel">
+        <h4 class="round"><span class="t-vi">Xem trước collage</span><span class="t-en">Collage preview</span></h4>
+        <div style="display:flex;justify-content:center"><div id="rev-collage" style="width:210px"></div></div>
+        <div class="round" style="background:var(--info);color:var(--fg);border-radius:12px;padding:11px 14px;font-size:16px;text-align:center">
+          <span class="t-vi">Chưa vừa ý thì chụp lại, hoặc chụp tiếp tấm kế tiếp</span>
+          <span class="t-en">Retake if unhappy, or continue to the next shot</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:16px">
+      <div class="round" style="font-size:19px;color:var(--muted)"><span class="t-vi">Ảnh đã chụp</span><span class="t-en">Captured shots</span></div>
+      <div class="thumbrow" id="rev-thumbs"></div>
+    </div>
+
+    <div style="display:flex;justify-content:center;gap:24px;margin-top:18px">
+      <button class="pill pill-red" id="rev-retake" style="font-size:25px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+        <span class="t-vi">Chụp lại</span><span class="t-en">Retake</span>
+      </button>
+      <button class="pill pill-blue" id="rev-reframe" style="font-size:25px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span class="t-vi">Đổi frame</span><span class="t-en">Change frame</span>
+      </button>
+      <button class="pill pill-green" id="rev-continue" style="font-size:25px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l5 5L20 6"/></svg>
+        <span class="t-vi" id="rev-continue-vi">Chụp tiếp</span><span class="t-en" id="rev-continue-en">Next shot</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 10 · EDIT ═══════════════ -->
+  <section class="screen" id="s-edit" data-od-id="screen-edit" style="padding:34px 48px">
+    <div class="toprow" style="gap:16px">
+      <div style="display:flex;align-items:center;gap:20px">
+        <button class="pill pill-red" data-go="start" style="font-size:22px;padding:12px 24px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          <span class="t-vi">Hủy bỏ</span><span class="t-en">Cancel</span>
+        </button>
+        <div class="bi t-md" style="text-align:left"><span class="bi-vi">Chỉnh sửa ảnh</span><span class="bi-en">Edit photos</span></div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <button class="pill pill-light" id="edit-reframe" style="font-size:21px;padding:12px 22px"><span class="t-vi">Đổi frame</span><span class="t-en">Change frame</span></button>
+        <button class="pill pill-light" id="edit-adjust" style="font-size:21px;padding:12px 22px"><span class="t-vi">Chỉnh ảnh</span><span class="t-en">Adjust</span></button>
+        <button class="pill pill-light" id="edit-retake" style="font-size:21px;padding:12px 22px"><span class="t-vi">Quay lại chụp</span><span class="t-en">Reshoot</span></button>
+        <button class="pill pill-green" data-go="final" style="font-size:21px;padding:12px 26px"><span class="t-vi">Xong</span><span class="t-en">Done</span></button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:330px 1fr 330px;gap:26px;flex:1;min-height:0;margin-top:20px">
+      <div class="panel">
+        <h4 class="round"><span class="t-vi">Ảnh đã chụp</span><span class="t-en">Captured shots</span></h4>
+        <div class="thumbrow" id="edit-thumbs" style="flex-wrap:wrap"></div>
+        <div class="spread" style="margin-top:6px">
+          <span class="round" style="font-size:20px"><span class="t-vi">Làm đẹp</span><span class="t-en">Beautify</span></span>
+          <button id="beauty-toggle" style="width:70px;height:38px;border-radius:999px;background:var(--accent);position:relative;transition:background .2s">
+            <span id="beauty-knob" style="position:absolute;top:4px;left:4px;width:30px;height:30px;border-radius:50%;background:var(--surface);transition:left .2s"></span>
+          </button>
+        </div>
+        <h4 class="round" style="margin-top:8px"><span class="t-vi">Bộ lọc</span><span class="t-en">Filters</span></h4>
+        <div class="filters" id="filter-grid"></div>
+      </div>
+
+      <div class="previewwrap" style="align-items:center">
+        <div id="edit-preview" style="width:420px;position:relative"></div>
+      </div>
+
+      <div class="panel">
+        <h4 class="round"><span class="t-vi">Nhãn dán</span><span class="t-en">Stickers</span></h4>
+        <div class="stickergrid" id="sticker-grid"></div>
+        <button class="pill pill-light" id="add-qr" style="font-size:20px;padding:12px 20px;width:100%">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 20v.01"/></svg>
+          <span class="t-vi">Thêm mã QR</span><span class="t-en">Add QR code</span>
+        </button>
+        <button class="pill pill-light" id="clear-stickers" style="font-size:20px;padding:12px 20px;width:100%;color:var(--warn);border-color:color-mix(in oklch, var(--warn) 45%, var(--ink))">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+          <span class="t-vi">Xóa sticker</span><span class="t-en">Clear stickers</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 11 · FINAL ═══════════════ -->
+  <section class="screen" id="s-final" data-od-id="screen-final">
+    <div class="toprow">
+      <button class="pill pill-light" data-go="edit" style="font-size:24px;padding:14px 28px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 5l-7 7 7 7"/></svg>
+        <span class="t-vi">Quay lại</span><span class="t-en">Back</span>
+      </button>
+      <div class="serif gold" style="font-size:44px;font-weight:800;letter-spacing:.08em">MỘC</div>
+      <button class="pill pill-ghost" id="final-end" style="font-size:24px;padding:14px 28px">
+        <span class="t-vi">Kết thúc</span><span class="t-en">End</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
+    <div class="grow" style="display:grid;grid-template-columns:1fr 400px;gap:44px;align-items:center;margin-top:16px">
+      <div style="display:flex;justify-content:center;align-items:center;min-height:0">
+        <div id="final-photo" style="width:470px"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:18px">
+        <div class="round" style="font-size:26px;font-weight:700;text-align:center">
+          <span class="t-vi">Hãy tải ảnh xuống nhé!</span><span class="t-en">Download your photos!</span>
+        </div>
+        <div class="qrbox" style="width:320px"><div class="qrsvg" id="final-qr"></div></div>
+        <div class="round" style="font-size:20px;color:var(--fg);text-align:center;max-width:340px">
+          <span class="t-vi">Sẽ mất 10–15 giây để có ảnh, bạn chờ xíu nha.</span>
+          <span class="t-en">It takes 10–15 seconds to prepare your files.</span>
+        </div>
+        <div class="mono" id="final-code" style="font-size:19px;color:var(--muted)"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:center;gap:20px;margin-top:14px">
+      <button class="pill pill-light" id="final-info" style="font-size:23px;padding:14px 26px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>
+        <span class="t-vi">Thông tin</span><span class="t-en">Info</span>
+      </button>
+      <button class="pill pill-light" data-print style="font-size:23px;padding:14px 26px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 8V3h10v5M7 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7"/></svg>
+        <span class="t-vi">In ảnh</span><span class="t-en">Print</span>
+      </button>
+    </div>
+  </section>
+
+  <div class="langtog" role="group" aria-label="Language">
+    <button data-setlang="vi">VI</button>
+    <button data-setlang="en">EN</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+(function(){
+  'use strict';
+  var root = document.documentElement;
+  var stage = document.getElementById('stage');
+  var KEY = 'moc-kiosk-v1';
+
+  /* ── fit 1920×1080 into the viewport ── */
+  function fit(){
+    var s = Math.min(window.innerWidth/1920, window.innerHeight/1080);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit); fit();
+
+  /* ── data ── */
+  var PRICING = {
+    small:{ opts:[{q:2,p:80000},{q:4,p:130000},{q:6,p:180000},{q:8,p:230000}] },
+    big:  { opts:[{q:2,p:110000},{q:3,p:160000},{q:4,p:210000},{q:5,p:260000}] }
+  };
+  var FRAMES = [
+    {id:'basic',   name:'Basic Not Bored',    band:'Basic Not Bored',  cat:'basic',    cols:2, rows:2, tone:'cream', shots:4},
+    {id:'love',    name:'Sending All Our Love',band:'Sending all our love', cat:'basic', cols:2, rows:2, tone:'blush', shots:4},
+    {id:'catba',   name:'Summer Cat Ba 2026', band:'Summer Cat Ba 2026',cat:'catba',   cols:2, rows:3, tone:'teal',  shots:4},
+    {id:'coastal', name:'Coastal Summer',     band:'Summer Time 2026', cat:'catba',    cols:2, rows:3, tone:'sand',  shots:4},
+    {id:'birthday',name:'Birthday Party',     band:'Happy Birthday',   cat:'birthday', cols:2, rows:2, tone:'ember', shots:4},
+    {id:'princess',name:'Disney Princess',    band:'Princess',         cat:'disney',   cols:2, rows:2, tone:'lilac', shots:4},
+    {id:'naruto',  name:'Ninja Way',          band:'Ninja Way',        cat:'naruto',   cols:2, rows:2, tone:'ember', shots:4},
+    {id:'sanrio',  name:'Sweet Friends',      band:'Sweet Friends',    cat:'sanrio',   cols:2, rows:2, tone:'blush', shots:4},
+    {id:'toystory',name:'Toy Story',          band:'To Infinity',      cat:'toystory', cols:2, rows:2, tone:'mint',  shots:4},
+    {id:'wide',    name:'Khung ngang',        band:'Mộc Photobooth',   cat:'ngang',    cols:2, rows:1, tone:'night', shots:2}
+  ];
+  var CATS = [
+    {id:'all',name:'Tất cả'},{id:'basic',name:'Basic'},{id:'catba',name:'Cat Ba'},
+    {id:'birthday',name:'Birthday'},{id:'disney',name:'Disney princess'},
+    {id:'naruto',name:'Naruto'},{id:'sanrio',name:'Sanrio'},
+    {id:'toystory',name:'Toy Story'},{id:'ngang',name:'Ngang'}
+  ];
+  var FILTERS = [
+    {id:'none', name:'Gốc',       css:'none'},
+    {id:'warm', name:'Ấm',        css:'saturate(1.12) sepia(.18) contrast(1.03)'},
+    {id:'cool', name:'Lạnh',      css:'saturate(1.05) hue-rotate(-14deg) brightness(1.03)'},
+    {id:'film', name:'Phim',      css:'contrast(1.12) saturate(.9) sepia(.14)'},
+    {id:'bw',   name:'Đen trắng', css:'grayscale(1) contrast(1.08)'},
+    {id:'vivid',name:'Rực rỡ',    css:'saturate(1.4) contrast(1.06)'},
+    {id:'fade', name:'Mờ ảo',     css:'contrast(.92) brightness(1.08) saturate(.85)'},
+    {id:'noir', name:'Noir',      css:'grayscale(1) contrast(1.3) brightness(.92)'}
+  ];
+  var STICKERS = [
+    {id:'heart', svg:'<path d="M12 20s-7-4.6-7-9.6A4 4 0 0 1 12 7a4 4 0 0 1 7 3.4c0 5-7 9.6-7 9.6z"/>', fill:true},
+    {id:'star',  svg:'<path d="M12 3l2.6 5.4 6 .9-4.3 4.2 1 5.9L12 16.6 6.7 19.4l1-5.9L3.4 9.3l6-.9L12 3z"/>', fill:true},
+    {id:'spark', svg:'<path d="M12 3c1 5.4 4.6 9 10 10-5.4 1-9 4.6-10 10-1-5.4-4.6-9-10-10 5.4-1 9-4.6 10-10z"/>', fill:true},
+    {id:'ring',  svg:'<circle cx="12" cy="12" r="7" fill="none" stroke-width="2.4"/>', fill:false},
+    {id:'bow',   svg:'<path d="M12 12l-6-3v6l6-3zm0 0l6-3v6l-6-3z"/>', fill:true},
+    {id:'chat',  svg:'<path d="M5 6h14v9H9l-4 3V6z"/>', fill:true},
+    {id:'leaf',  svg:'<path d="M19 5C9 5 5 10 5 18c8 0 14-4 14-13z"/>', fill:true},
+    {id:'diamond',svg:'<path d="M12 3l7 6-7 12-7-12 7-6z"/>', fill:true}
+  ];
+
+  var S = { screen:'start', lang:'vi', pkg:null, frame:null, shots:[], cur:0,
+            filter:'none', beauty:true, stickers:[], order:null, retake:false,
+            reframe:false, prevFrame:null };
+
+  /* ── persistence ── */
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify({screen:S.screen,lang:S.lang,pkg:S.pkg,frame:S.frame,order:S.order})); }catch(e){}
+  }
+  function restore(){
+    try{
+      var raw = localStorage.getItem(KEY); if(!raw) return;
+      var d = JSON.parse(raw);
+      S.lang = d.lang || 'vi';
+      S.pkg = d.pkg || null;
+      S.frame = d.frame || null;
+      S.order = d.order || null;
+      if(d.screen && d.screen !== 'capture') S.screen = d.screen;
+    }catch(e){}
+  }
+
+  /* ── helpers ── */
+  function money(n){ return (n||0).toLocaleString('de-DE') + 'đ'; }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function frameById(id){ for(var i=0;i<FRAMES.length;i++){ if(FRAMES[i].id===id) return FRAMES[i]; } return FRAMES[0]; }
+  function sceneStyle(seed){
+    var x = (seed*13)%80, y = (seed*7)%80, h = (seed*23)%40;
+    return 'background-position:'+x+'px '+y+'px;filter:hue-rotate('+h+'deg) saturate('+(1+(seed%3)*0.08).toFixed(2)+')';
+  }
+  function slotHTML(frame,i){
+    var sh = S.shots[i];
+    if(!sh) return '<div class="slot"></div>';
+    return '<div class="slot"><div class="scene" style="'+sceneStyle(sh.seed)+'"></div></div>';
+  }
+  function frameHTML(frame, opts){
+    opts = opts || {};
+    var n = frame.cols*frame.rows, slots = '', i;
+    for(i=0;i<n;i++) slots += slotHTML(frame,i);
+    var top = opts.topBand ? '<div class="fband sm">'+esc(frame.band)+'</div>' : '';
+    var bot = opts.band===false ? '' : '<div class="fband">'+esc(frame.band)+'</div>';
+    return '<div class="framebox tone-'+frame.tone+'" style="--cols:'+frame.cols+'">'+top+
+           '<div class="fgrid">'+slots+'</div>'+bot+'</div>';
+  }
+  function stickerLayerHTML(){
+    var out = '';
+    S.stickers.forEach(function(st){
+      var def = null, i;
+      for(i=0;i<STICKERS.length;i++){ if(STICKERS[i].id===st.id) def = STICKERS[i]; }
+      if(!def) return;
+      var fill = def.fill ? 'fill="var(--accent)" stroke="none"' : 'fill="none" stroke="var(--warn)"';
+      out += '<div class="sticker" style="left:'+st.x+'%;top:'+st.y+'%;transform:rotate('+st.rot+'deg)">'+
+             '<svg viewBox="0 0 24 24" '+fill+' stroke-width="2.4">'+def.svg+'</svg></div>';
+    });
+    if(S.qrSticker){
+      out += '<div class="sticker" style="left:'+S.qrSticker.x+'%;top:'+S.qrSticker.y+'%;width:78px;height:78px;transform:rotate('+S.qrSticker.rot+'deg)">'+
+             '<div style="background:var(--fg);padding:4px;border-radius:6px" class="qrsvg" id="qr-sticker-slot"></div></div>';
+    }
+    return out;
+  }
+  function previewHTML(){
+    var frame = frameById(S.frame);
+    var f = (S.filter!=='none' ? S.filter : '');
+    var beauty = S.beauty ? ' brightness(1.05) saturate(1.06)' : '';
+    return '<div style="position:relative;filter:'+f+beauty+'">'+frameHTML(frame,{band:true})+
+           '<div class="stickerlayer">'+stickerLayerHTML()+'</div></div>';
+  }
+
+  /* ── QR ── */
+  function qrNode(text){
+    var box = document.createElement('div');
+    box.className = 'qrsvg';
+    if(typeof window.qrcode === 'function'){
+      try{
+        var qr = window.qrcode(0,'M'); qr.addData(text); qr.make();
+        box.innerHTML = qr.createSvgTag({cellSize:8, margin:2, scalable:true});
+        var svg = box.querySelector('svg');
+        if(svg){ svg.setAttribute('width','100%'); svg.setAttribute('height','100%'); svg.removeAttribute('height'); svg.style.height='auto'; }
+        return box;
+      }catch(e){}
+    }
+    var cs = getComputedStyle(root);
+    var fg = (cs.getPropertyValue('--ink')||'black').trim();
+    var bg = (cs.getPropertyValue('--surface')||'white').trim();
+    var n = 29, c = document.createElement('canvas'); c.width = c.height = n*8;
+    c.style.width = '100%'; c.style.height = 'auto';
+    var g = c.getContext('2d');
+    g.fillStyle = bg; g.fillRect(0,0,c.width,c.height); g.fillStyle = fg;
+    var h = 2166136261, k;
+    for(k=0;k<text.length;k++){ h ^= text.charCodeAt(k); h = Math.imul(h,16777619) >>> 0; }
+    for(var y=0;y<n;y++){ for(var x=0;x<n;x++){
+      h ^= h<<13; h ^= h>>>17; h ^= h<<5; h >>>= 0;
+      if((h & 7) > 3) g.fillRect(x*8,y*8,8,8);
+    }}
+    box.appendChild(c);
+    return box;
+  }
+  function orderCode(){
+    if(!S.order){
+      S.order = 'MOC-' + Math.random().toString(36).slice(2,7).toUpperCase();
+      save();
+    }
+    return S.order;
+  }
+  function fillQR(el, text){
+    if(!el) return;
+    el.innerHTML = '';
+    var n = qrNode(text);
+    el.appendChild(n.firstChild ? n.firstChild : n);
+  }
+
+  /* ── screens ── */
+  var screens = Array.prototype.slice.call(document.querySelectorAll('.screen'));
+  function go(name){
+    S.screen = name;
+    screens.forEach(function(s){ s.classList.toggle('active', s.id === 's-'+name); });
+    save();
+    if(name==='payment') renderPayment();
+    if(name==='pay-qr') renderPayQR();
+    if(name==='pay-cash') renderPayCash();
+    if(name==='frame') renderFrames();
+    if(name==='review') renderReview();
+    if(name==='edit') renderEdit();
+    if(name==='final') renderFinal();
+  }
+
+  /* ── pricing ── */
+  function renderPricing(){
+    ['small','big'].forEach(function(size){
+      var row = document.getElementById('row-'+size);
+      var opts = PRICING[size].opts, h = '';
+      h += '<div style="width:330px;display:flex;align-items:center;gap:22px">';
+      h += '<svg viewBox="0 0 60 90" width="'+(size==='small'?'66':'86')+'" fill="none" stroke="var(--fg)" stroke-width="2.4">';
+      if(size==='small'){ h += '<rect x="6" y="6" width="48" height="78" rx="4"/><path d="M6 32h48M6 58h48"/>'; }
+      else { h += '<rect x="4" y="14" width="52" height="62" rx="4"/><path d="M30 14v62M4 45h52"/>'; }
+      h += '</svg>';
+      h += '<div><div class="round" style="font-size:34px;font-weight:700">'+(size==='small'?'Khổ nhỏ 1+1':'Khổ lớn 1+1')+'</div>';
+      h += '<div class="sub" style="font-size:21px">'+(size==='small'?'Small size 1+1 (3–4 cut)':'Big size 1+1')+'</div></div></div>';
+      h += '<div class="priceopts">';
+      opts.forEach(function(o){
+        h += '<button class="priceopt" data-size="'+size+'" data-q="'+o.q+'" data-p="'+o.p+'">'+
+             '<div class="'+(size==='small'?'pricecircle':'pricesquare')+'">'+o.q+'</div>'+
+             '<div class="p">'+money(o.p)+'</div></button>';
+      });
+      h += '</div>';
+      row.innerHTML = h;
+    });
+  }
+  function selectPkg(size,q,p){
+    S.pkg = {size:size,q:q,p:p};
+    Array.prototype.forEach.call(document.querySelectorAll('.priceopt'), function(el){
+      el.classList.toggle('on', el.dataset.size===size && +el.dataset.q===q);
+    });
+    var next = document.getElementById('pricing-next');
+    next.disabled = false; next.style.opacity = 1;
+    document.getElementById('pricing-total').innerHTML = 'Đã chọn · ' + q + ' ảnh · ' + money(p);
+    save();
+  }
+
+  /* ── payment ── */
+  function renderPayment(){
+    var total = S.pkg ? S.pkg.p : 0;
+    document.getElementById('payment-total').textContent = S.pkg ? money(total) : '—';
+  }
+  function renderPayQR(){
+    var amt = S.pkg ? S.pkg.p : 0;
+    var code = orderCode();
+    var url = 'https://mocphotobooth.vn/pay/' + code + '?amount=' + amt;
+    fillQR(document.getElementById('qr-svg'), url);
+    document.getElementById('qr-amount').textContent = money(amt);
+    document.getElementById('qr-code').textContent = '#' + code;
+  }
+  function renderPayCash(){
+    document.getElementById('cash-total').textContent = S.pkg ? money(S.pkg.p) : '—';
+  }
+
+  /* ── frame picker ── */
+  var activeCat = 'all';
+  function renderFrames(){
+    var cats = document.getElementById('frame-cats');
+    cats.innerHTML = CATS.map(function(c){
+      return '<button class="chip'+(c.id===activeCat?' on':'')+'" data-cat="'+c.id+'">'+esc(c.name)+'</button>';
+    }).join('');
+    var grid = document.getElementById('frame-grid');
+    var list = FRAMES.filter(function(f){ return activeCat==='all' || f.cat===activeCat; });
+    grid.innerHTML = list.map(function(f){
+      var sel = S.frame === f.id;
+      return '<button class="framecard'+(sel?' on':'')+'" data-frame="'+f.id+'">'+
+             frameHTML(f,{band:true})+
+             '<div class="fname">'+esc(f.name)+'</div>'+
+             '<div class="fmeta">'+f.cols+'×'+f.rows+' · '+f.shots+' poses</div></button>';
+    }).join('');
+    updateFrameSel();
+  }
+  function updateFrameSel(){
+    var f = S.frame ? frameById(S.frame) : null;
+    document.getElementById('frame-selected').textContent = f ? ('Đã chọn · ' + f.name) : 'Chưa chọn khung';
+    var btn = document.getElementById('frame-start');
+    btn.disabled = !f;
+    btn.querySelector('.t-vi').textContent = S.reframe ? 'Áp dụng khung' : 'Bắt đầu chụp';
+    btn.querySelector('.t-en').textContent = S.reframe ? 'Apply frame' : 'Start shooting';
+    document.getElementById('frame-title-vi').textContent = S.reframe ? 'Đổi khung ảnh' : 'Chọn khung ảnh';
+    document.getElementById('frame-title-en').textContent = S.reframe ? 'Change frame' : 'Choose a frame';
+  }
+  function selectFrame(id){
+    S.frame = id;
+    if(!S.reframe){ S.shots = []; S.cur = 0; }
+    Array.prototype.forEach.call(document.querySelectorAll('.framecard'), function(el){
+      el.classList.toggle('on', el.dataset.frame===id);
+    });
+    updateFrameSel(); save();
+  }
+  function beginReframe(){
+    S.reframe = true; S.prevFrame = S.frame;
+    go('frame');
+  }
+  function cancelFrame(){
+    if(S.reframe){ S.reframe = false; if(S.prevFrame) S.frame = S.prevFrame; go('review'); }
+    else { go('start'); }
+  }
+  function applyReframe(){
+    var frame = frameById(S.frame);
+    S.reframe = false; S.prevFrame = null;
+    if(S.shots.length > frame.shots) S.shots = S.shots.slice(0, frame.shots);
+    var missing = -1, i;
+    for(i=0;i<frame.shots;i++){ if(!S.shots[i]){ missing = i; break; } }
+    if(missing >= 0){ S.cur = missing; go('capture'); beginShot(); }
+    else { if(S.cur > frame.shots-1) S.cur = frame.shots-1; go('review'); }
+  }
+
+  /* ── capture ── */
+  var raf = null;
+  function startCapture(retakeIndex){
+    var frame = frameById(S.frame);
+    if(typeof retakeIndex === 'number'){ S.cur = retakeIndex; S.retake = true; }
+    else { S.cur = 0; S.retake = false; S.reframe = false; S.prevFrame = null; if(S.shots.length !== frame.shots) S.shots = []; }
+    go('capture');
+    beginShot();
+  }
+  function beginShot(){
+    var frame = frameById(S.frame);
+    var ring = document.getElementById('cap-ring');
+    var num  = document.getElementById('cap-num');
+    var C = 942.5, DUR = 3000;
+    document.getElementById('cap-idx').textContent = S.cur+1;
+    document.getElementById('cap-idx-en').textContent = S.cur+1;
+    document.getElementById('cap-total').textContent = frame.shots;
+    document.getElementById('cap-total-en').textContent = frame.shots;
+    var sc = document.querySelector('#s-capture .capstage .scene');
+    if(sc) sc.style.backgroundPosition = ((S.cur*37)+11)+'px '+((S.cur*23)+7)+'px';
+    ring.style.strokeDashoffset = 0;
+    var start = null;
+    if(raf) cancelAnimationFrame(raf);
+    function step(ts){
+      if(!start) start = ts;
+      var t = Math.min((ts-start)/DUR, 1);
+      ring.style.strokeDashoffset = (C*t).toFixed(1);
+      var remain = Math.max(1, 3 - Math.floor(t*3));
+      num.textContent = remain;
+      if(t < 1){ raf = requestAnimationFrame(step); }
+      else { fireShot(); }
+    }
+    num.textContent = 3;
+    raf = requestAnimationFrame(step);
+  }
+  function fireShot(){
+    var flash = document.getElementById('cap-flash');
+    flash.classList.add('on');
+    setTimeout(function(){ flash.classList.remove('on'); }, 120);
+    S.shots[S.cur] = { seed: Math.floor(Math.random()*97)+1, t: Date.now() };
+    setTimeout(function(){
+      S.retake = false;
+      go('review');
+    }, 780);
+  }
+  function firstMissing(from){
+    var frame = frameById(S.frame), i;
+    for(i=from;i<frame.shots;i++){ if(!S.shots[i]) return i; }
+    for(i=0;i<frame.shots;i++){ if(!S.shots[i]) return i; }
+    return -1;
+  }
+  function nextShot(){
+    var m = firstMissing(S.cur+1);
+    if(m >= 0){ S.cur = m; go('capture'); beginShot(); }
+    else { go('edit'); }
+  }
+
+  /* ── review ── */
+  function renderReview(){
+    var frame = frameById(S.frame);
+    var total = frame.shots;
+    var idx = Math.min(S.cur, total-1);
+    document.getElementById('rev-idx').textContent = idx+1;
+    document.getElementById('rev-idx-en').textContent = idx+1;
+    document.getElementById('rev-total').textContent = total;
+    document.getElementById('rev-total-en').textContent = total;
+
+    var missingAfter = -1, missingAny = -1, i;
+    for(i=0;i<total;i++){ if(!S.shots[i]){ if(missingAny<0) missingAny=i; if(i>idx && missingAfter<0) missingAfter=i; } }
+    var lblVi, lblEn;
+    if(missingAfter >= 0){ lblVi = 'Chụp tấm tiếp theo'; lblEn = 'Next shot'; }
+    else if(missingAny >= 0){ lblVi = 'Chụp tấm còn thiếu'; lblEn = 'Shoot missing shot'; }
+    else { lblVi = 'Chỉnh sửa ảnh'; lblEn = 'Edit photos'; }
+    document.getElementById('rev-continue-vi').textContent = lblVi;
+    document.getElementById('rev-continue-en').textContent = lblEn;
+
+    var big = document.getElementById('rev-big');
+    var sh = S.shots[idx];
+    big.innerHTML = sh ? '<div class="scene lg" style="'+sceneStyle(sh.seed)+'"></div>' : '<div class="scene lg"></div>';
+
+    document.getElementById('rev-collage').innerHTML = frameHTML(frame,{band:true});
+
+    document.getElementById('rev-thumbs').innerHTML = S.shots.map(function(s,i){
+      return '<button class="thumb'+(i===idx?' on':'')+'" data-thumb="'+i+'">'+
+             '<div class="scene" style="'+sceneStyle(s.seed)+'"></div>'+
+             '<span class="tagline">'+(i+1)+'</span></button>';
+    }).join('');
+  }
+
+  /* ── edit ── */
+  function renderEdit(){
+    document.getElementById('edit-preview').innerHTML = previewHTML();
+    document.getElementById('edit-thumbs').innerHTML = S.shots.map(function(s,i){
+      return '<button class="thumb" data-gothumb="'+i+'"><div class="scene" style="'+sceneStyle(s.seed)+'"></div><span class="tagline">'+(i+1)+'</span></button>';
+    }).join('');
+    document.getElementById('filter-grid').innerHTML = FILTERS.map(function(f){
+      return '<button class="filt'+(S.filter===f.id?' on':'')+'" data-filter="'+f.id+'">'+
+             '<div class="swatch"><div class="scene" style="'+sceneStyle(3)+';filter:'+f.css+'"></div></div>'+
+             '<span>'+esc(f.name)+'</span></button>';
+    }).join('');
+    document.getElementById('sticker-grid').innerHTML = STICKERS.map(function(st){
+      var fill = st.fill ? 'fill="var(--accent)" stroke="none"' : 'fill="none" stroke="var(--warn)"';
+      return '<button class="stickerbtn" data-sticker="'+st.id+'">'+
+             '<svg viewBox="0 0 24 24" '+fill+' stroke-width="2.4">'+st.svg+'</svg></button>';
+    }).join('');
+    syncBeauty();
+    mountQRSticker();
+  }
+  function syncBeauty(){
+    var t = document.getElementById('beauty-toggle');
+    var k = document.getElementById('beauty-knob');
+    t.style.background = S.beauty ? 'var(--accent)' : 'color-mix(in oklch, var(--surface) 55%, var(--ink))';
+    k.style.left = S.beauty ? '36px' : '4px';
+  }
+  function mountQRSticker(){
+    var slot = document.getElementById('qr-sticker-slot');
+    if(slot && S.qrSticker){ fillQR(slot, 'https://mocphotobooth.vn/d/' + orderCode()); }
+  }
+
+  /* ── final ── */
+  function renderFinal(){
+    var frame = frameById(S.frame);
+    document.getElementById('final-photo').innerHTML =
+      '<div style="filter:'+(S.filter!=='none'?S.filter:'')+(S.beauty?' brightness(1.05) saturate(1.06)':'')+'">'+
+      frameHTML(frame,{band:true})+'<div class="stickerlayer">'+stickerLayerHTML()+'</div></div>';
+    var code = orderCode();
+    fillQR(document.getElementById('final-qr'), 'https://mocphotobooth.vn/d/' + code);
+    document.getElementById('final-code').textContent = '#' + code + ' · ' + (S.pkg ? S.pkg.q + ' ảnh' : '');
+    mountQRSticker();
+  }
+
+  /* ── toast ── */
+  var toastTimer = null;
+  function toast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('on');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('on'); }, 2200);
+  }
+
+  /* ── keypads ── */
+  function keypadHTML(){
+    var h = '', i;
+    for(i=1;i<=9;i++) h += '<button class="key" data-k="'+i+'">'+i+'</button>';
+    h += '<button class="key small del" data-k="del">XÓA</button>';
+    h += '<button class="key" data-k="0">0</button>';
+    h += '<button class="key small ok" data-k="ok">OK</button>';
+    return h;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.keypad'), function(p){
+    p.innerHTML = keypadHTML();
+  });
+  function bindPad(name, inputId, onOk){
+    var pad = document.querySelector('.keypad[data-pad="'+name+'"]');
+    if(!pad) return;
+    pad.addEventListener('click', function(e){
+      var b = e.target.closest('[data-k]'); if(!b) return;
+      var input = document.getElementById(inputId);
+      var k = b.dataset.k;
+      if(k === 'ok'){ onOk(input.value); return; }
+      if(k === 'del'){ input.value = input.value.slice(0,-1); return; }
+      if(input.value.length < 8) input.value += k;
+    });
+  }
+  bindPad('unlock','unlock-input', function(v){
+    var input = document.getElementById('unlock-input');
+    if(v.length >= 4){ input.value=''; go('pricing'); }
+    else { input.classList.add('shake'); setTimeout(function(){ input.classList.remove('shake'); }, 400); input.value=''; }
+  });
+  bindPad('voucher','voucher-input', function(v){
+    if(!v){ toast('Nhập mã voucher / Enter a voucher code'); return; }
+    var pct = 10;
+    if(S.pkg){
+      S.pkg.p = Math.round(S.pkg.p * (100-pct)/100 / 1000) * 1000;
+      save();
+    }
+    document.getElementById('payment-total').textContent = S.pkg ? money(S.pkg.p) : '—';
+    toast('Đã áp dụng voucher −' + pct + '%');
+  });
+  bindPad('cash','cash-input', function(v){
+    var input = document.getElementById('cash-input');
+    if(v.length >= 4){ input.value=''; go('frame'); }
+    else { input.classList.add('shake'); setTimeout(function(){ input.classList.remove('shake'); }, 400); }
+  });
+
+  /* ── events ── */
+  document.addEventListener('click', function(e){
+    var t;
+
+    t = e.target.closest('[data-go]');
+    if(t){ go(t.dataset.go); return; }
+
+    t = e.target.closest('[data-setlang]');
+    if(t){ setLang(t.dataset.setlang); return; }
+
+    t = e.target.closest('.priceopt');
+    if(t){ selectPkg(t.dataset.size, +t.dataset.q, +t.dataset.p); return; }
+
+    t = e.target.closest('[data-cat]');
+    if(t){ activeCat = t.dataset.cat; renderFrames(); return; }
+
+    t = e.target.closest('[data-frame]');
+    if(t){ selectFrame(t.dataset.frame); return; }
+
+    t = e.target.closest('[data-thumb]');
+    if(t){ S.cur = +t.dataset.thumb; renderReview(); return; }
+
+    t = e.target.closest('[data-gothumb]');
+    if(t){ S.cur = +t.dataset.gothumb; go('review'); return; }
+
+    t = e.target.closest('[data-filter]');
+    if(t){ S.filter = t.dataset.filter; renderEdit(); return; }
+
+    t = e.target.closest('[data-sticker]');
+    if(t){
+      S.stickers.push({ id:t.dataset.sticker, x: 12 + Math.random()*66, y: 12 + Math.random()*60, rot: Math.round(Math.random()*44-22) });
+      renderEdit(); return;
+    }
+
+    t = e.target.closest('[data-print]');
+    if(t){ toast('Đang gửi lệnh in · gửi lệnh tới máy in'); return; }
+  });
+
+  document.getElementById('pricing-next').addEventListener('click', function(){ if(S.pkg) go('payment'); });
+  document.getElementById('frame-start').addEventListener('click', function(){
+    if(!S.frame) return;
+    if(S.reframe) applyReframe(); else startCapture();
+  });
+  document.getElementById('frame-close').addEventListener('click', cancelFrame);
+  document.getElementById('frame-cancel').addEventListener('click', cancelFrame);
+  document.getElementById('rev-retake').addEventListener('click', function(){ startCapture(S.cur); });
+  document.getElementById('rev-reframe').addEventListener('click', beginReframe);
+  document.getElementById('edit-reframe').addEventListener('click', beginReframe);
+  document.getElementById('rev-continue').addEventListener('click', nextShot);
+  document.getElementById('edit-retake').addEventListener('click', function(){ S.cur = 0; go('review'); });
+  document.getElementById('edit-adjust').addEventListener('click', function(){
+    S.beauty = !S.beauty; syncBeauty();
+    document.getElementById('edit-preview').innerHTML = previewHTML(); mountQRSticker();
+  });
+  document.getElementById('beauty-toggle').addEventListener('click', function(){
+    S.beauty = !S.beauty; syncBeauty();
+    document.getElementById('edit-preview').innerHTML = previewHTML(); mountQRSticker();
+  });
+  document.getElementById('add-qr').addEventListener('click', function(){
+    S.qrSticker = { x: 62, y: 66, rot: -6 };
+    renderEdit(); toast('Đã thêm mã QR vào ảnh');
+  });
+  document.getElementById('clear-stickers').addEventListener('click', function(){
+    S.stickers = []; S.qrSticker = null; renderEdit(); toast('Đã xóa nhãn dán');
+  });
+  document.getElementById('final-info').addEventListener('click', function(){
+    toast('Mộc Photobooth · in tại quầy');
+  });
+  document.getElementById('final-end').addEventListener('click', function(){
+    S.shots = []; S.stickers = []; S.qrSticker = null; S.pkg = null; S.frame = null; S.cur = 0; S.filter='none';
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    go('start');
+  });
+
+  /* ── language ── */
+  function setLang(l){
+    S.lang = l; root.dataset.lang = l;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-setlang]'), function(b){
+      b.classList.toggle('on', b.dataset.setlang === l);
+    });
+    save();
+  }
+
+  /* ── boot ── */
+  renderPricing();
+  restore();
+  setLang(S.lang);
+  if(S.pkg) selectPkg(S.pkg.size, S.pkg.q, S.pkg.p);
+  go(S.screen || 'start');
+})();
+</script>
+</body>
+</html>
