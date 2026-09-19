@@ -195,12 +195,25 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
 
 /* ─── top chrome ────────────────────────────────────────────────── */
 .toprow{ display:flex; align-items:center; justify-content:space-between; gap:24px; }
-.langtog{
+.botleft{
   position:absolute; bottom:34px; left:68px; z-index:20;
+  display:flex; align-items:center; gap:12px;
+}
+.langtog{
   display:flex; gap:4px; padding:5px;
   background:color-mix(in oklch, var(--bg-deep) 55%, transparent);
   border:1px solid var(--border); border-radius:999px;
 }
+.resettog{
+  display:flex; align-items:center; gap:9px; padding:11px 20px;
+  background:color-mix(in oklch, var(--bg-deep) 55%, transparent);
+  border:1px solid var(--border); border-radius:999px;
+  font-family:var(--font-round); font-weight:700; font-size:19px;
+  color:var(--muted); opacity:.72; cursor:pointer;
+  transition:opacity .15s, color .15s, border-color .15s;
+}
+.resettog:hover{ opacity:1; color:var(--ink); border-color:color-mix(in oklch, var(--accent) 45%, var(--border)); }
+.resettog svg{ width:19px; height:19px; flex:none; }
 .langtog button{
   padding:8px 20px; border-radius:999px;
   font-family:var(--font-round); font-weight:700; font-size:20px; color:var(--muted);
@@ -746,9 +759,15 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
     </div>
   </section>
 
-  <div class="langtog" role="group" aria-label="Language">
-    <button data-setlang="vi">VI</button>
-    <button data-setlang="en">EN</button>
+  <div class="botleft">
+    <div class="langtog" role="group" aria-label="Language">
+      <button data-setlang="vi">VI</button>
+      <button data-setlang="en">EN</button>
+    </div>
+    <button class="resettog" id="reset-all" type="button" title="Xóa cache & chạy lại">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+      <span class="t-vi">Chạy lại</span><span class="t-en">Restart</span>
+    </button>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -1296,9 +1315,22 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
     toast('Mộc Photobooth · in tại quầy');
   });
   document.getElementById('final-end').addEventListener('click', function(){
-    S.shots = []; S.stickers = []; S.qrSticker = null; S.pkg = null; S.frame = null; S.cur = 0; S.filter='none';
+    resetAll();
+  });
+
+  /* ── reset (clear cache + restart from the beginning) ── */
+  function resetAll(){
+    S.screen='start'; S.pkg=null; S.frame=null; S.shots=[]; S.cur=0;
+    S.filter='none'; S.beauty=true; S.stickers=[]; S.order=null; S.retake=false;
+    S.reframe=false; S.prevFrame=null;
     try{ localStorage.removeItem(KEY); }catch(e){}
+    renderPricing();
+    setLang(S.lang);
     go('start');
+  }
+  document.getElementById('reset-all').addEventListener('click', function(){
+    resetAll();
+    toast(S.lang==='en' ? 'Cache cleared — starting over' : 'Đã xóa cache — bắt đầu lại');
   });
 
   /* ── language ── */
