@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Poze Photobooth — Kiosk Prototype</title>
+<title>PÓZE buồng chụp — Kiosk Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -96,8 +96,16 @@ p{ margin:0; text-wrap:pretty; }
 .screen.center{ align-items:center; justify-content:center; text-align:center; }
 
 /* ─── brand logo (Poze) ─────────────────────────────────────────── */
-.brandlogo{ display:block; width:440px; height:auto; }
-.brandlogo.sm{ width:112px; }
+.brandmark{ display:flex; flex-direction:column; align-items:center; gap:16px; }
+.brandlogo{ display:block; width:430px; height:auto; }
+.brandlogo.sm{ width:118px; }
+.branddescr{
+  font-family:var(--font-round); font-weight:700; font-size:30px;
+  letter-spacing:.36em; padding-left:.36em; line-height:1;
+  color:var(--accent);
+}
+.branddescr.sm{ font-size:15px; letter-spacing:.32em; padding-left:.32em; }
+.toprow .brandmark{ gap:8px; }
 
 /* ─── bilingual type ────────────────────────────────────────────── */
 .bi{ font-family:var(--font-display); text-transform:uppercase; line-height:.96; letter-spacing:.004em; }
@@ -403,7 +411,10 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
     </button>
 
-    <img class="brandlogo" src="assets/poze-logo.png" alt="Poze Photobooth">
+    <div class="brandmark">
+      <img class="brandlogo" src="assets/poze-logo.png" alt="PÓZE buồng chụp">
+      <div class="branddescr">photobooth</div>
+    </div>
 
     <button class="bi t-hero" data-go="pricing" style="margin-top:74px;background:none">
       <span class="bi-vi">Chạm để bắt đầu</span>
@@ -430,7 +441,7 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
       <div style="display:flex;flex-direction:column;gap:30px;padding-left:60px">
         <div class="bi t-xl"><span class="bi-vi">Nhập mật khẩu</span><span class="bi-en">Enter password</span></div>
         <input class="input" id="unlock-input" inputmode="numeric" readonly placeholder="••••" style="max-width:640px">
-        <p class="sub" style="font-size:22px"><span class="t-vi">Dành cho nhân viên vận hành kiosk.</span><span class="t-en">For kiosk operators only.</span></p>
+        <p class="sub" style="font-size:22px"><span class="t-vi">Dành cho nhân viên.</span><span class="t-en">For staff only.</span></p>
       </div>
       <div class="keypad lg" data-pad="unlock"></div>
     </div>
@@ -718,7 +729,10 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 5l-7 7 7 7"/></svg>
         <span class="t-vi">Quay lại</span><span class="t-en">Back</span>
       </button>
-      <img class="brandlogo sm" src="assets/poze-logo.png" alt="Poze Photobooth">
+      <div class="brandmark">
+        <img class="brandlogo sm" src="assets/poze-logo.png" alt="PÓZE buồng chụp">
+        <div class="branddescr sm">buồng chụp</div>
+      </div>
       <button class="pill pill-ghost" id="final-end" style="font-size:24px;padding:14px 28px">
         <span class="t-vi">Kết thúc</span><span class="t-en">End</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 5l7 7-7 7"/></svg>
@@ -798,7 +812,7 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
     {id:'naruto',  name:'Ninja Way',          band:'Ninja Way',        cat:'naruto',   cols:2, rows:2, tone:'ember', shots:4},
     {id:'sanrio',  name:'Sweet Friends',      band:'Sweet Friends',    cat:'sanrio',   cols:2, rows:2, tone:'blush', shots:4},
     {id:'toystory',name:'Toy Story',          band:'To Infinity',      cat:'toystory', cols:2, rows:2, tone:'mint',  shots:4},
-    {id:'wide',    name:'Khung ngang',        band:'Poze Photobooth',   cat:'ngang',    cols:2, rows:1, tone:'night', shots:2}
+    {id:'wide',    name:'Khung ngang',        band:'PÓZE buồng chụp',   cat:'ngang',    cols:2, rows:1, tone:'night', shots:2}
   ];
   var CATS = [
     {id:'all',name:'Tất cả'},{id:'basic',name:'Basic'},{id:'catba',name:'Cat Ba'},
@@ -1307,7 +1321,7 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
     S.stickers = []; S.qrSticker = null; renderEdit(); toast('Đã xóa nhãn dán');
   });
   document.getElementById('final-info').addEventListener('click', function(){
-    toast('Poze Photobooth · in tại quầy');
+    toast('PÓZE buồng chụp · in tại quầy');
   });
   document.getElementById('final-end').addEventListener('click', function(){
     resetAll();
