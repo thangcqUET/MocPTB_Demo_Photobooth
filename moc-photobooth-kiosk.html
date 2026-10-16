@@ -889,6 +889,7 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
   if(BRAND === 'the-era' || BRAND === 'theera') root.dataset.brand = 'the-era';
   var IS_ERA = root.dataset.brand === 'the-era';
   if(IS_ERA) document.title = 'The Era booth — Kiosk Prototype';
+  var BRAND_NAME = IS_ERA ? 'The Era booth' : 'PÓZE buồng chụp';
 
   /* ── fit 1920×1080 into the viewport ── */
   function fit(){
@@ -912,7 +913,7 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
     {id:'naruto',  name:'Ninja Way',          band:'Ninja Way',        cat:'naruto',   cols:2, rows:2, tone:'ember', shots:4},
     {id:'sanrio',  name:'Sweet Friends',      band:'Sweet Friends',    cat:'sanrio',   cols:2, rows:2, tone:'blush', shots:4},
     {id:'toystory',name:'Toy Story',          band:'To Infinity',      cat:'toystory', cols:2, rows:2, tone:'mint',  shots:4},
-    {id:'wide',    name:'Khung ngang',        band:'PÓZE buồng chụp',   cat:'ngang',    cols:2, rows:1, tone:'night', shots:2}
+    {id:'wide',    name:'Khung ngang',        band:BRAND_NAME,          cat:'ngang',    cols:2, rows:1, tone:'night', shots:2}
   ];
   var CATS = [
     {id:'all',name:'Tất cả'},{id:'basic',name:'Basic'},{id:'catba',name:'Cat Ba'},
@@ -1421,7 +1422,7 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
     S.stickers = []; S.qrSticker = null; renderEdit(); toast('Đã xóa nhãn dán');
   });
   document.getElementById('final-info').addEventListener('click', function(){
-    toast('PÓZE buồng chụp · in tại quầy');
+    toast(BRAND_NAME + ' · in tại quầy');
   });
   document.getElementById('final-end').addEventListener('click', function(){
     resetAll();
