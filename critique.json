@@ -1,0 +1,26 @@
+{
+  "kind": "critique-panel",
+  "score": 5,
+  "axes": {
+    "clarity": {
+      "score": 5,
+      "notes": "Brand switch is a single documented rule: ?brand=the-era flips html[data-brand], same as the sister Selfbooth prototype. Default Poze URL is untouched."
+    },
+    "hierarchy": {
+      "score": 4,
+      "notes": "Same 11-screen layout and chrome positions as the default. Hierarchy is now weight-driven (Manrope 800) with the condensed uppercase stack removed, so the espresso display text still lands first on the beige canvas."
+    },
+    "typography": {
+      "score": 5,
+      "notes": "One modern geometric sans (Manrope 400-800) carries all display tiers plus a Be Vietnam Pro body tier; Vietnamese diacritics intact (UTF-8 verified). Wordmark is a text lockup — The Era in caramel + muted 'booth' — replacing the PÓZE raster logo."
+    },
+    "motion": {
+      "score": 4,
+      "notes": "No new motion this pass; existing screen fades, countdown ring and flash are untouched and correctly re-toned (ring stroke bound to caramel, flash pinned to a light surface)."
+    },
+    "brand": {
+      "score": 5,
+      "notes": "Beige #f3ebdd canvas + light-wood accents + one deep-caramel accent, mapped onto the existing token set with no raw hex outside the token block. Light-on-dark inversions fixed: status pills/keys/scan-tab/dark nav take --status-fg, QR card and flash pinned to --surface."
+    }
+  }
+}

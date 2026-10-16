@@ -4,10 +4,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{var __b=(new URLSearchParams(location.search).get('brand')||'').toLowerCase();if(__b==='the-era'||__b==='theera')document.documentElement.dataset.brand='the-era';}catch(e){}</script>
 <title>PÓZE buồng chụp — Kiosk Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════════
    POZE PHOTOBOOTH — kiosk design tokens
@@ -31,6 +32,7 @@
   --ok:          oklch(64% 0.15 145);
   --warn:        oklch(58% 0.19 30);
   --info:        oklch(58% 0.07 255);
+  --status-fg:   var(--fg);
   --shadow:      0 20px 46px oklch(18% 0.05 30 / 0.42);
 
   /* simulated-camera scene + empty slot */
@@ -57,6 +59,96 @@
 
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   BRAND OVERRIDE — The Era booth   (append ?brand=the-era to the URL)
+   Beige canvas + light-wood structure, one modern geometric sans
+   (Manrope, weight-driven). Same layout, components and flow as the
+   default PÓZE kiosk — only the token layer + type posture change.
+   See brand-spec-the-era.md. No raw hex outside this block / :root.
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-brand="the-era"]{
+  --bg:          #f3ebdd;   /* beige canvas */
+  --bg-deep:     #eadcc4;   /* recessed warm panel */
+  --wood:        #c3a377;   /* light wood — structural bezels / bars */
+  --surface:     #fbf7ee;   /* warm near-white cards, keys */
+  --surface-2:   #f0e7d6;   /* pressed / secondary cream */
+  --fg:          #3a2c1d;   /* espresso text on beige */
+  --muted:       #7c6647;   /* secondary text on beige */
+  --border:      #ddcbb0;   /* hairline on beige */
+  --ink:         #2b2014;   /* ink on surface */
+  --ink-soft:    #8a7458;   /* muted ink on surface */
+  --accent:      #a9742f;   /* deep caramel */
+  --accent-soft: #d9bd93;   /* light-wood tint — nav, active states */
+  --status-fg:   #fbf7ee;   /* light text on green / red / blue */
+  --ok:          #3f9d6a;
+  --warn:        #c5452f;
+  --info:        #4f7aa8;
+  --shadow:      0 20px 46px rgba(58,44,29,.16);
+
+  /* simulated-camera scene + empty slot */
+  --scene-bg:    #f7f1e6;
+  --scene-line:  #b79b74;
+  --slot-empty:  #efe6d6;
+
+  --font-serif:   'Manrope', 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-display: 'Manrope', 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-round:   'Manrope', 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-ui:      'Be Vietnam Pro', system-ui, sans-serif;
+  --font-mono:    ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+/* lighter grain + warm edge on the beige canvas */
+html[data-brand="the-era"] .stage::before{ opacity:.045; }
+html[data-brand="the-era"] .stage::after{
+  background:radial-gradient(130% 100% at 50% 40%, transparent 66%, color-mix(in oklch, var(--accent) 10%, transparent) 148%);
+}
+
+/* weight-driven hierarchy — no condensed uppercase stack */
+html[data-brand="the-era"] .bi{ text-transform:none; letter-spacing:-.02em; font-weight:800; }
+html[data-brand="the-era"][data-lang="vi"] .bi-vi,
+html[data-brand="the-era"][data-lang="en"] .bi-en{ text-transform:none; letter-spacing:-.02em; }
+html[data-brand="the-era"] .bi-en,
+html[data-brand="the-era"] .bi-vi{ font-family:var(--font-display); }
+html[data-brand="the-era"] .countnum{ font-weight:800; text-shadow:0 12px 40px rgba(58,44,29,.32); }
+
+/* flash + QR card keep light surfaces (--fg is dark on this skin) */
+html[data-brand="the-era"] .flash{ background:var(--surface); }
+html[data-brand="the-era"] .qrbox{ background:var(--surface); }
+
+/* warm shadows instead of the burgundy-tinted defaults */
+html[data-brand="the-era"] .key{ box-shadow:0 8px 18px rgba(58,44,29,.18); }
+html[data-brand="the-era"] .stickerbtn{ box-shadow:0 6px 14px rgba(58,44,29,.16); }
+
+/* capture viewport gets a soft warm vignette over the bright studio feed */
+html[data-brand="the-era"] .capstage::after{
+  background:radial-gradient(72% 62% at 50% 42%, transparent 44%, rgba(58,44,29,.18) 132%);
+}
+
+/* caramel carries the countdown ring (single accent moment) */
+html[data-brand="the-era"] .ring .fill{ stroke:var(--accent); }
+
+/* status colours always take light text on this skin */
+html[data-brand="the-era"] .pill-green,
+html[data-brand="the-era"] .pill-red,
+html[data-brand="the-era"] .pill-blue,
+html[data-brand="the-era"] .key.del,
+html[data-brand="the-era"] .key.ok,
+html[data-brand="the-era"] .scantab,
+html[data-brand="the-era"] .thumb .tagline,
+html[data-brand="the-era"] .navc.dark{ color:var(--status-fg); }
+
+/* ── The Era wordmark lockup ── */
+.brand-era{ display:none; }
+.brandword{
+  font-family:var(--font-display); font-weight:800;
+  font-size:104px; line-height:.92; letter-spacing:-.035em;
+  color:var(--accent);
+}
+.brandword.sm{ font-size:34px; letter-spacing:-.02em; }
+html[data-brand="the-era"] .brand-poze{ display:none; }
+html[data-brand="the-era"] .brand-era{ display:block; }
+html[data-brand="the-era"] .branddescr{ color:var(--muted); }
 
 *,*::before,*::after{ box-sizing:border-box; }
 html,body{ height:100%; margin:0; background:var(--bg-deep); overflow:hidden; }
@@ -412,8 +504,9 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
     </button>
 
     <div class="brandmark">
-      <img class="brandlogo" src="assets/poze-logo.png" alt="PÓZE buồng chụp">
-      <div class="branddescr">photobooth</div>
+      <img class="brandlogo brand-poze" src="assets/poze-logo.png" alt="PÓZE buồng chụp">
+      <span class="brandword brand-era">The Era</span>
+      <div class="branddescr"><span class="brand-poze">photobooth</span><span class="brand-era">booth</span></div>
     </div>
 
     <button class="bi t-hero" data-go="pricing" style="margin-top:74px;background:none">
@@ -643,7 +736,7 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
       <div class="panel">
         <h4 class="round"><span class="t-vi">Xem trước collage</span><span class="t-en">Collage preview</span></h4>
         <div style="display:flex;justify-content:center"><div id="rev-collage" style="width:210px"></div></div>
-        <div class="round" style="background:var(--info);color:var(--fg);border-radius:12px;padding:11px 14px;font-size:16px;text-align:center">
+        <div class="round" style="background:var(--info);color:var(--status-fg);border-radius:12px;padding:11px 14px;font-size:16px;text-align:center">
           <span class="t-vi">Chưa vừa ý thì chụp lại, hoặc chụp tiếp tấm kế tiếp</span>
           <span class="t-en">Retake if unhappy, or continue to the next shot</span>
         </div>
@@ -730,8 +823,9 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
         <span class="t-vi">Quay lại</span><span class="t-en">Back</span>
       </button>
       <div class="brandmark">
-        <img class="brandlogo sm" src="assets/poze-logo.png" alt="PÓZE buồng chụp">
-        <div class="branddescr sm">buồng chụp</div>
+        <img class="brandlogo sm brand-poze" src="assets/poze-logo.png" alt="PÓZE buồng chụp">
+        <span class="brandword sm brand-era">The Era</span>
+        <div class="branddescr sm"><span class="brand-poze">buồng chụp</span><span class="brand-era">booth</span></div>
       </div>
       <button class="pill pill-ghost" id="final-end" style="font-size:24px;padding:14px 28px">
         <span class="t-vi">Kết thúc</span><span class="t-en">End</span>
@@ -789,6 +883,12 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
   var root = document.documentElement;
   var stage = document.getElementById('stage');
   var KEY = 'moc-kiosk-v1';
+
+  /* ── brand skin (?brand=the-era) ── */
+  var BRAND = (new URLSearchParams(location.search).get('brand') || '').toLowerCase();
+  if(BRAND === 'the-era' || BRAND === 'theera') root.dataset.brand = 'the-era';
+  var IS_ERA = root.dataset.brand === 'the-era';
+  if(IS_ERA) document.title = 'The Era booth — Kiosk Prototype';
 
   /* ── fit 1920×1080 into the viewport ── */
   function fit(){
@@ -938,7 +1038,7 @@ html[data-lang="vi"] .t-en,html[data-lang="en"] .t-vi{ display:none; }
   }
   function orderCode(){
     if(!S.order){
-      S.order = 'MOC-' + Math.random().toString(36).slice(2,7).toUpperCase();
+      S.order = (IS_ERA ? 'ERA-' : 'MOC-') + Math.random().toString(36).slice(2,7).toUpperCase();
       save();
     }
     return S.order;
